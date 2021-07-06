@@ -15,12 +15,13 @@ jobs:
       mysql:
         image: mysql:5.7
         ports:
-          - "3306:3306"
+          - 3306
         env:
           MYSQL_HOST: 127.0.0.1
           MYSQL_DATABASE: rmt_test
           MYSQL_USER: rmt
           MYSQL_PASSWORD: rmt
+        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
 
     runs-on: ubuntu-latest
     strategy:
@@ -44,15 +45,13 @@ jobs:
           ${{ matrix.ruby-version }}-gems-${{ hashFiles('Gemfile') }}
     - name: Pre-run inline scripts
       run: |
-        ruby -e "require 'yaml'; puts({'database_test'=>{'host'=>'0.0.0.0','username'=>'rmt','password'=>'rmt','database'=>'rmt_test','adapter'=>'mysql2','encoding'=>'utf8','timeout'=>5000,'pool'=>5}}.to_yaml)" > config/rmt.local.yml
+        ruby -e "require 'yaml'; puts({'database_test'=>{'host'=>'127.0.0.1','username'=>'rmt','password'=>'rmt','database'=>'rmt_test','adapter'=>'mysql2','encoding'=>'utf8','timeout'=>5000,'pool'=>5}}.to_yaml)" > config/rmt.local.yml
+
+    - name: Run Danger
+      run: |
+        bundle exec danger
     - name: Run tests
       run: |
         bundle exec rails db:migrate RAILS_ENV=test
         bundle exec rake test
-    - name: Run Danger
-      uses: MeilCli/danger-action@v5
-      with:
-        plugins_file: 'Gemfile'
-        install_path: 'vendor/bundle'
-        danger_file: 'Dangerfile'
-        danger_id: 'danger-pr'
+
