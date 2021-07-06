@@ -13,15 +13,14 @@ jobs:
       DANGER_GITHUB_API_TOKEN: ${ secrets.GH_TOKEN }
     services:
       mysql:
-        image: mysql:5.7
+        image: mariadb:latest
         ports:
-          - 3306
+          - "3306:3306"
         env:
-          MYSQL_HOST: 127.0.0.1
-          MYSQL_DATABASE: rmt_test
-          MYSQL_USER: rmt
-          MYSQL_PASSWORD: rmt
-        options: --health-cmd="mysqladmin ping" --health-interval=5s --health-timeout=2s --health-retries=3
+          MARIADB_HOST: 127.0.0.1
+          MARIADB_DATABASE: rmt_test
+          MARIADB_USER: rmt
+          MARIADB_PASSWORD: rmt
 
     runs-on: ubuntu-latest
     strategy:
