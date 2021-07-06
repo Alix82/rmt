@@ -22,6 +22,7 @@ jobs:
 
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 3
       matrix:
         ruby-version: ['2.5.8', '2.6.6', '2.7.2']
 
@@ -42,8 +43,11 @@ jobs:
           ${{ matrix.ruby-version }}-gems-${{ hashFiles('Gemfile') }}
     - name: Pre-run inline scripts
       run: |
-        ruby -e "require 'yaml'; puts({'database_test'=>{'host'=>'127.0.0.1','username'=>'rmt','password'=>'rmt','database'=>'rmt_test','adapter'=>'mysql2','encoding'=>'utf8','timeout'=>5000,'pool'=>5}}.to_yaml)" > config/rmt.local.yml
-
+        ruby -e "require 'yaml'; puts({'database_test'=>{'host'=>'0.0.0.0','username'=>'rmt','password'=>'rmt','database'=>'rmt_test','adapter'=>'mysql2','encoding'=>'utf8','timeout'=>5000,'pool'=>5}}.to_yaml)" > config/rmt.local.yml
+    - name: Verify MySQL connection from host
+      run: |
+        sudo apt-get install -y mysql-client
+        mysql --host 0.0.0.0 --port ${{ job.services.mysql.ports['3306'] }} -u rmt -p rmt -e "SHOW DATABASES"
     - name: Run Danger
       uses: MeilCli/danger-action@v5
       env:
@@ -54,7 +58,9 @@ jobs:
         danger_file: 'Dangerfile'
         danger_id: 'danger-pr'
     - name: Run tests
+      env:
+        RAILS_ENV: test
       run: |
-        bundle exec rails db:migrate RAILS_ENV=test
+        bundle exec rails db:migrate
         bundle exec rake test
 
